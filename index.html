@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Banco Epidemiológico · Feridas</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Literata:ital,wght@0,300;0,400;0,500;1,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #0d1117;
+  --surface:   #161b22;
+  --surface2:  #21262d;
+  --border:    #30363d;
+  --accent:    #58a6ff;
+  --accent2:   #3fb950;
+  --danger:    #f85149;
+  --warning:   #d29922;
+  --text:      #e6edf3;
+  --muted:     #8b949e;
+  --syne:      'Syne', sans-serif;
+  --serif:     'Literata', serif;
+  --mono:      'JetBrains Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--serif);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 15px;
+}
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ─── HEADER ─── */
+header {
+  position: sticky; top: 0; z-index: 200;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 2rem;
+  height: 58px;
+  background: rgba(13,17,23,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+
+.wordmark {
+  font-family: var(--syne);
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  display: flex; align-items: center; gap: 0.6rem;
+}
+
+.wordmark-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--accent2);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+nav { display: flex; gap: 2px; }
+
+.nav-btn {
+  font-family: var(--syne);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.45rem 1rem;
+  border: none; border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.nav-btn:hover { color: var(--text); background: var(--surface2); }
+.nav-btn.active { color: var(--accent); background: rgba(88,166,255,0.1); }
+
+/* ─── LAYOUT ─── */
+main { max-width: 1360px; margin: 0 auto; padding: 2rem; }
+.page { display: none; animation: fadeIn 0.25s ease; }
+.page.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* ─── PAGE HEADER ─── */
+.page-header {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  margin-bottom: 2rem;
+  flex-wrap: wrap; gap: 1rem;
+}
+
+.page-title {
+  font-family: var(--syne);
+  font-size: 1.9rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text);
+}
+
+.page-sub {
+  font-size: 0.88rem;
+  color: var(--muted);
+  margin-top: 0.2rem;
+  font-style: italic;
+}
+
+/* ─── STATS ─── */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 900px) { .stats-row { grid-template-columns: repeat(2,1fr); } }
+@media (max-width: 500px) { .stats-row { grid-template-columns: 1fr; } }
+
+.stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.stat:hover { border-color: var(--accent); }
+
+.stat::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--accent);
+}
+.stat.green::before { background: var(--accent2); }
+.stat.red::before { background: var(--danger); }
+.stat.yellow::before { background: var(--warning); }
+
+.stat-label {
+  font-family: var(--syne);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: 0.6rem;
+}
+
+.stat-num {
+  font-family: var(--mono);
+  font-size: 2.4rem;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--text);
+}
+
+.stat-desc {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-top: 0.4rem;
+}
+
+/* ─── CHARTS ─── */
+.charts-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px,1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.chart-label {
+  font-family: var(--syne);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: 1.25rem;
+}
+
+.bar-row { margin-bottom: 0.8rem; }
+.bar-top { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text); margin-bottom: 0.3rem; }
+.bar-count { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); }
+.bar-track { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 3px; background: var(--accent); transition: width 0.7s cubic-bezier(.4,0,.2,1); }
+.bar-fill.g { background: var(--accent2); }
+.bar-fill.r { background: var(--danger); }
+.bar-fill.y { background: var(--warning); }
+
+/* ─── TABLE ─── */
+.table-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.table-toolbar {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.search {
+  flex: 1; min-width: 200px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.9rem;
+  font-family: var(--serif);
+  font-size: 0.88rem;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s;
+}
+.search:focus { border-color: var(--accent); }
+.search::placeholder { color: var(--muted); }
+
+.tbl-wrap { overflow-x: auto; }
+
+table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+
+thead th {
+  background: var(--surface2);
+  font-family: var(--syne);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  padding: 0.7rem 1rem;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+}
+
+tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: var(--surface2); }
+
+tbody td {
+  padding: 0.65rem 1rem;
+  color: var(--text);
+  white-space: nowrap;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chip {
+  display: inline-block;
+  padding: 0.18rem 0.55rem;
+  border-radius: 20px;
+  font-family: var(--syne);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.chip-blue   { background: rgba(88,166,255,0.15);  color: var(--accent);  }
+.chip-green  { background: rgba(63,185,80,0.15);   color: var(--accent2); }
+.chip-red    { background: rgba(248,81,73,0.15);   color: var(--danger);  }
+.chip-yellow { background: rgba(210,153,34,0.15);  color: var(--warning); }
+.chip-muted  { background: var(--surface2); color: var(--muted); }
+
+.act-btn {
+  padding: 0.28rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  font-family: var(--syne);
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-right: 4px;
+  letter-spacing: 0.04em;
+}
+.act-btn.edit { color: var(--accent); border-color: rgba(88,166,255,0.3); }
+.act-btn.edit:hover { background: rgba(88,166,255,0.1); }
+.act-btn.del  { color: var(--danger); border-color: rgba(248,81,73,0.3); }
+.act-btn.del:hover  { background: rgba(248,81,73,0.1); }
+
+.empty {
+  text-align: center; padding: 4rem 2rem;
+  color: var(--muted); font-style: italic; font-size: 0.95rem;
+}
+
+/* ─── FORM ─── */
+.form-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 2rem;
+}
+
+.form-section {
+  font-family: var(--syne);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--border);
+  margin: 1.75rem 0 1.25rem;
+  grid-column: 1 / -1;
+}
+
+.form-section:first-child { margin-top: 0; }
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px,1fr));
+  gap: 1.1rem;
+}
+
+.field { display: flex; flex-direction: column; gap: 0.4rem; }
+.field.full { grid-column: 1 / -1; }
+
+label {
+  font-family: var(--syne);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+input, select, textarea {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.85rem;
+  font-family: var(--serif);
+  font-size: 0.9rem;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+}
+
+input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+select option { background: var(--surface); }
+
+.form-actions {
+  display: flex; gap: 0.75rem; flex-wrap: wrap;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+/* ─── BUTTONS ─── */
+.btn {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.6rem 1.3rem;
+  border: none; border-radius: 8px;
+  font-family: var(--syne);
+  font-size: 0.8rem; font-weight: 700;
+  letter-spacing: 0.05em; text-transform: uppercase;
+  cursor: pointer; transition: all 0.2s;
+}
+
+.btn-blue   { background: var(--accent);  color: #0d1117; }
+.btn-blue:hover { filter: brightness(1.1); transform: translateY(-1px); }
+.btn-green  { background: var(--accent2); color: #0d1117; }
+.btn-green:hover { filter: brightness(1.1); }
+.btn-ghost  { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+.btn-ghost:hover { border-color: var(--muted); }
+.btn-danger { background: var(--danger); color: white; }
+.btn-danger:hover { filter: brightness(1.1); }
+
+/* ─── MODAL ─── */
+.overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.65); backdrop-filter: blur(4px);
+  z-index: 500; align-items: center; justify-content: center;
+}
+.overlay.open { display: flex; }
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 2rem; width: 90%; max-width: 480px;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+  animation: fadeIn 0.2s ease;
+}
+
+.modal h3 {
+  font-family: var(--syne); font-size: 1.2rem; font-weight: 800;
+  color: var(--danger); margin-bottom: 0.75rem;
+}
+
+.modal p { color: var(--muted); line-height: 1.6; margin-bottom: 1.5rem; font-style: italic; }
+
+/* ─── TOAST ─── */
+#toast {
+  position: fixed; bottom: 2rem; right: 2rem;
+  padding: 0.85rem 1.3rem;
+  border-radius: 10px;
+  font-family: var(--syne);
+  font-size: 0.8rem; font-weight: 700;
+  letter-spacing: 0.04em;
+  opacity: 0; transform: translateY(8px);
+  transition: all 0.3s;
+  z-index: 9999; max-width: 340px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  pointer-events: none;
+}
+#toast.show { opacity: 1; transform: none; }
+#toast.ok  { background: var(--accent2); color: #0d1117; }
+#toast.err { background: var(--danger);  color: white; }
+#toast.inf { background: var(--accent);  color: #0d1117; }
+
+/* ─── LOADER ─── */
+.loader {
+  display: inline-block; width: 16px; height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.loading-row td { text-align: center; padding: 3rem; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wordmark">
+    <div class="wordmark-dot"></div>
+    BEF · Banco Epidemiológico de Feridas
+  </div>
+  <nav>
+    <button class="nav-btn active" onclick="go('dashboard')">Dashboard</button>
+    <button class="nav-btn" onclick="go('registos')">Registos</button>
+    <button class="nav-btn" onclick="go('novo')">＋ Novo</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ═══ DASHBOARD ═══ -->
+  <div id="page-dashboard" class="page active">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Dashboard</div>
+        <div class="page-sub">Resumo epidemiológico em tempo real</div>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat">
+        <div class="stat-label">Total Pacientes</div>
+        <div class="stat-num" id="s-total">—</div>
+        <div class="stat-desc">registos activos</div>
+      </div>
+      <div class="stat red">
+        <div class="stat-label">Com Infecção</div>
+        <div class="stat-num" id="s-inf">—</div>
+        <div class="stat-desc">casos confirmados</div>
+      </div>
+      <div class="stat green">
+        <div class="stat-label">Cicatrizados</div>
+        <div class="stat-num" id="s-cic">—</div>
+        <div class="stat-desc">alta clínica</div>
+      </div>
+      <div class="stat yellow">
+        <div class="stat-label">Em Tratamento</div>
+        <div class="stat-num" id="s-trat">—</div>
+        <div class="stat-desc">acompanhamento activo</div>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-label">Distribuição por Sexo</div>
+        <div id="c-sexo"><p style="color:var(--muted);font-style:italic;font-size:.85rem">Carregando...</p></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-label">Tipos de Ferida</div>
+        <div id="c-ferida"><p style="color:var(--muted);font-style:italic;font-size:.85rem">Carregando...</p></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-label">Evolução Clínica</div>
+        <div id="c-evolucao"><p style="color:var(--muted);font-style:italic;font-size:.85rem">Carregando...</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ REGISTOS ═══ -->
+  <div id="page-registos" class="page">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Registos</div>
+        <div class="page-sub" id="tbl-count">—</div>
+      </div>
+      <div style="display:flex;gap:.75rem">
+        <button class="btn btn-ghost" onclick="exportCSV()">↓ CSV</button>
+        <button class="btn btn-blue" onclick="go('novo')">＋ Novo Registo</button>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-toolbar">
+        <input class="search" id="search" placeholder="Pesquisar por município, tipo de ferida, tratamento..." oninput="filter(this.value)">
+        <button class="btn btn-ghost" onclick="loadData()">↻</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th><th>Idade</th><th>Sexo</th><th>Município</th>
+              <th>Tipo de Ferida</th><th>Infecção</th><th>Profundidade</th>
+              <th>Cicatrização</th><th>Desfecho</th><th>Acções</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr class="loading-row"><td colspan="10"><span class="loader"></span> A carregar...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ FORMULÁRIO ═══ -->
+  <div id="page-novo" class="page">
+    <div class="page-header">
+      <div>
+        <div class="page-title" id="form-title">Novo Registo</div>
+        <div class="page-sub">Preencha os dados clínicos e epidemiológicos</div>
+      </div>
+    </div>
+
+    <div class="form-wrap">
+      <form id="form" onsubmit="submitForm(event)">
+        <div class="form-grid">
+
+          <div class="form-section">👤 Dados do Paciente</div>
+
+          <div class="field">
+            <label>Idade</label>
+            <input type="number" name="Idade" min="0" max="120" placeholder="Ex: 45" required>
+          </div>
+          <div class="field">
+            <label>Sexo</label>
+            <select name="Sexo" required>
+              <option value="">Seleccione...</option>
+              <option>Masculino</option>
+              <option>Feminino</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Município</label>
+            <input type="text" name="Município" placeholder="Ex: Luanda" required>
+          </div>
+          <div class="field">
+            <label>Doença de Base</label>
+            <input type="text" name="Doença de Base" placeholder="Ex: Diabetes, HTA">
+          </div>
+
+          <div class="form-section">🩹 Caracterização da Ferida</div>
+
+          <div class="field">
+            <label>Tipo de Ferida</label>
+            <select name="Tipo de Ferida" required>
+              <option value="">Seleccione...</option>
+              <option>Úlcera de pressão</option>
+              <option>Úlcera venosa</option>
+              <option>Úlcera arterial</option>
+              <option>Pé diabético</option>
+              <option>Ferida cirúrgica</option>
+              <option>Ferida traumática</option>
+              <option>Queimadura</option>
+              <option>Outro</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Localização</label>
+            <input type="text" name="Localização" placeholder="Ex: Calcâneo direito">
+          </div>
+          <div class="field">
+            <label>Tempo de Evolução (dias)</label>
+            <input type="number" name="Tempo de Evolução (dias)" min="0" placeholder="Ex: 30">
+          </div>
+          <div class="field">
+            <label>Tamanho (cm)</label>
+            <input type="text" name="Tamanho (cm)" placeholder="Ex: 5x3">
+          </div>
+          <div class="field">
+            <label>Profundidade</label>
+            <select name="Profundidade">
+              <option value="">Seleccione...</option>
+              <option>Superficial</option>
+              <option>Parcial</option>
+              <option>Total</option>
+              <option>Profunda (osso/tendão)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Infecção</label>
+            <select name="Infecção (Sim/Não)">
+              <option value="">Seleccione...</option>
+              <option>Sim</option>
+              <option>Não</option>
+            </select>
+          </div>
+
+          <div class="form-section">💊 Tratamento e Evolução</div>
+
+          <div class="field">
+            <label>Tratamento</label>
+            <input type="text" name="Tratamento" placeholder="Ex: Curativo com hidrogel">
+          </div>
+          <div class="field">
+            <label>Data de Início</label>
+            <input type="date" name="Data Início">
+          </div>
+          <div class="field">
+            <label>Data de Avaliação</label>
+            <input type="date" name="Data Avaliação">
+          </div>
+          <div class="field">
+            <label>Evolução</label>
+            <select name="Evolução">
+              <option value="">Seleccione...</option>
+              <option>Melhora</option>
+              <option>Estável</option>
+              <option>Piora</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Cicatrização</label>
+            <select name="Cicatrização (Sim/Não)">
+              <option value="">Seleccione...</option>
+              <option>Sim</option>
+              <option>Não</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Complicações</label>
+            <input type="text" name="Complicações" placeholder="Ex: Osteomielite">
+          </div>
+          <div class="field">
+            <label>Desfecho</label>
+            <select name="Desfecho">
+              <option value="">Seleccione...</option>
+              <option>Alta</option>
+              <option>Em tratamento</option>
+              <option>Amputação</option>
+              <option>Óbito</option>
+              <option>Abandono</option>
+            </select>
+          </div>
+
+        </div>
+
+        <input type="hidden" id="edit-id">
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-blue" id="btn-save">Guardar Registo</button>
+          <button type="button" class="btn btn-ghost" onclick="go('registos')">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</main>
+
+<!-- Modal eliminar -->
+<div class="overlay" id="modal-del">
+  <div class="modal">
+    <h3>⚠ Confirmar Eliminação</h3>
+    <p>Tem a certeza que deseja eliminar este registo permanentemente? Esta acção não pode ser revertida.</p>
+    <div style="display:flex;gap:.75rem">
+      <button class="btn btn-danger" onclick="confirmDel()">Eliminar</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── Config ──────────────────────────────────────────────────
+// Se estiver no Vercel: API = '' (mesmo domínio)
+// Se testar localmente: API = 'http://localhost:5000'
+const API = '';
+
+let allData = [];
+let delId   = null;
+
+// ── Navigation ───────────────────────────────────────────────
+function go(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelectorAll('.nav-btn')[['dashboard','registos','novo'].indexOf(page)]?.classList.add('active');
+  if (page === 'dashboard') loadDashboard();
+  if (page === 'registos')  loadData();
+  if (page === 'novo') resetForm();
+}
+
+// ── Toast ────────────────────────────────────────────────────
+function toast(msg, type = 'ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `show ${type}`;
+  setTimeout(() => t.className = '', 3200);
+}
+
+// ── API helpers ──────────────────────────────────────────────
+async function apiFetch(path, opts = {}) {
+  const res = await fetch(API + path, {
+    headers: { 'Content-Type': 'application/json' },
+    ...opts
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+// ── Load data ────────────────────────────────────────────────
+async function loadData() {
+  document.getElementById('tbody').innerHTML =
+    '<tr class="loading-row"><td colspan="10"><span class="loader"></span> A carregar...</td></tr>';
+  try {
+    allData = await apiFetch('/api/registos');
+    renderTable(allData);
+  } catch (e) {
+    document.getElementById('tbody').innerHTML =
+      `<tr class="loading-row"><td colspan="10" style="color:var(--danger)">Erro: ${e.message}</td></tr>`;
+    toast('Erro ao carregar dados', 'err');
+  }
+}
+
+async function loadDashboard() {
+  try {
+    const s = await apiFetch('/api/estatisticas');
+    document.getElementById('s-total').textContent = s.total ?? 0;
+    document.getElementById('s-inf').textContent   = s.infeccao?.Sim ?? 0;
+    document.getElementById('s-cic').textContent   = s.cicatrizacao?.Sim ?? 0;
+    document.getElementById('s-trat').textContent  = (s.total ?? 0) - (s.cicatrizacao?.Sim ?? 0);
+    renderBars('c-sexo',     s.por_sexo,       ['g','b']);
+    renderBars('c-ferida',   s.por_tipo_ferida, ['b','y','r','g']);
+    renderBars('c-evolucao', s.evolucao ?? {}, ['g','y','r']);
+  } catch (e) {
+    toast('Não foi possível carregar estatísticas', 'err');
+  }
+}
+
+// ── Table ────────────────────────────────────────────────────
+const COLS = ['ID','Idade','Sexo','Município','Tipo de Ferida',
+              'Infecção (Sim/Não)','Profundidade','Cicatrização (Sim/Não)','Desfecho'];
+
+function chipify(col, val) {
+  if (!val || val === '') return `<span class="chip chip-muted">—</span>`;
+  if (col === 'Sexo')
+    return `<span class="chip ${val==='Masculino'?'chip-blue':'chip-yellow'}">${val}</span>`;
+  if (col.includes('Sim/Não'))
+    return `<span class="chip ${val==='Sim'?'chip-red':'chip-green'}">${val}</span>`;
+  if (col === 'Desfecho') {
+    const map = { Alta:'chip-green', Óbito:'chip-red', Amputação:'chip-red',
+                  'Em tratamento':'chip-yellow', Abandono:'chip-muted' };
+    return `<span class="chip ${map[val]||'chip-muted'}">${val}</span>`;
+  }
+  return val;
+}
+
+function renderTable(data) {
+  const tb = document.getElementById('tbody');
+  document.getElementById('tbl-count').textContent =
+    `${data.length} registo${data.length !== 1 ? 's' : ''} encontrado${data.length !== 1 ? 's' : ''}`;
+
+  if (!data.length) {
+    tb.innerHTML = '<tr><td colspan="10" class="empty">Nenhum registo encontrado.</td></tr>';
+    return;
+  }
+
+  tb.innerHTML = data.map(r => `
+    <tr>
+      ${COLS.map(c => `<td>${chipify(c, r[c])}</td>`).join('')}
+      <td>
+        <button class="act-btn edit" onclick="editRecord(${r.ID})">Editar</button>
+        <button class="act-btn del"  onclick="openDel(${r.ID})">Eliminar</button>
+      </td>
+    </tr>`).join('');
+}
+
+function filter(q) {
+  const qn = q.toLowerCase();
+  renderTable(allData.filter(r => JSON.stringify(r).toLowerCase().includes(qn)));
+}
+
+// ── Charts ───────────────────────────────────────────────────
+function renderBars(id, data, colors = []) {
+  const el = document.getElementById(id);
+  if (!data || !Object.keys(data).length) {
+    el.innerHTML = '<p style="color:var(--muted);font-style:italic;font-size:.82rem">Sem dados suficientes</p>';
+    return;
+  }
+  const total = Object.values(data).reduce((a,b) => a+b, 0);
+  el.innerHTML = Object.entries(data)
+    .sort((a,b) => b[1]-a[1])
+    .map(([k,v], i) => `
+      <div class="bar-row">
+        <div class="bar-top"><span>${k}</span><span class="bar-count">${v} · ${Math.round(v/total*100)}%</span></div>
+        <div class="bar-track"><div class="bar-fill ${colors[i%colors.length]||''}" style="width:${v/total*100}%"></div></div>
+      </div>`).join('');
+}
+
+// ── Form ─────────────────────────────────────────────────────
+function resetForm() {
+  document.getElementById('form').reset();
+  document.getElementById('edit-id').value = '';
+  document.getElementById('form-title').textContent = 'Novo Registo';
+  document.getElementById('btn-save').textContent = 'Guardar Registo';
+}
+
+async function submitForm(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btn-save');
+  btn.textContent = 'A guardar...'; btn.disabled = true;
+
+  const data = {};
+  new FormData(e.target).forEach((v, k) => { if (v) data[k] = v; });
+  const id = document.getElementById('edit-id').value;
+
+  try {
+    if (id) {
+      await apiFetch(`/api/registos/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+      toast('Registo actualizado com sucesso!');
+    } else {
+      await apiFetch('/api/registos', { method: 'POST', body: JSON.stringify(data) });
+      toast('Novo registo adicionado!');
+    }
+    go('registos');
+  } catch (err) {
+    toast('Erro: ' + err.message, 'err');
+  } finally {
+    btn.textContent = id ? 'Actualizar Registo' : 'Guardar Registo';
+    btn.disabled = false;
+  }
+}
+
+function editRecord(id) {
+  const r = allData.find(x => String(x.ID) === String(id));
+  if (!r) return;
+  resetForm();
+  document.getElementById('edit-id').value = id;
+  document.getElementById('form-title').textContent = `Editar Registo #${id}`;
+  document.getElementById('btn-save').textContent = 'Actualizar Registo';
+  const form = document.getElementById('form');
+  Object.entries(r).forEach(([k, v]) => {
+    const el = form.querySelector(`[name="${k}"]`);
+    if (el && v) el.value = v;
+  });
+  go('novo');
+}
+
+// ── Delete ───────────────────────────────────────────────────
+function openDel(id) { delId = id; document.getElementById('modal-del').classList.add('open'); }
+function closeModal() { document.getElementById('modal-del').classList.remove('open'); delId = null; }
+
+async function confirmDel() {
+  closeModal();
+  try {
+    await apiFetch(`/api/registos/${delId}`, { method: 'DELETE' });
+    toast('Registo eliminado.');
+    loadData();
+  } catch (err) {
+    toast('Erro ao eliminar: ' + err.message, 'err');
+  }
+}
+
+// ── Export CSV ───────────────────────────────────────────────
+function exportCSV() {
+  if (!allData.length) return toast('Sem dados para exportar', 'inf');
+  const h = Object.keys(allData[0]).join(',');
+  const rows = allData.map(r => Object.values(r).map(v => `"${v??''}"`).join(','));
+  const blob = new Blob(['\uFEFF' + [h, ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `banco_feridas_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  toast('CSV exportado!', 'inf');
+}
+
+// ── Init ─────────────────────────────────────────────────────
+loadDashboard();
+</script>
+</body>
+</html>
